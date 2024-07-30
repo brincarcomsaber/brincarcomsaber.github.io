@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Memória</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            gap: 10px;
+        }
+        .card {
+            width: 100px;
+            height: 100px;
+            background-color: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+        .card.flipped {
+            background-color: white;
+            color: black;
+        }
+        #back-link {
+            margin-top: 20px;
+            font-size: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        #back-link:hover {
+            color: #0056b3;
+        }
+    </style>
+    <!-- Código de anúncio do Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8594113118941416" crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>Jogo da Memória</h1>
+    <div id="game-board"></div>
+    <a id="back-link" href="index.html">Voltar à Home</a>
+
+    <!-- Áudios para feedback -->
+    <audio id="audio-correct" src="audios/correct.mp3"></audio>
+    <audio id="audio-incorrect" src="audios/incorrect.mp3"></audio>
+
+    <script>
+        const cardsArray = [
+            'A', 'A', 'B', 'B', 'C', 'C', 'D', 'D',
+            'E', 'E', 'F', 'F', 'G', 'G', 'H', 'H'
+        ];
+
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+
+        function shuffle(array) {
+            array.sort(() => Math.random() - 0.5);
+        }
+
+        function createBoard() {
+            const gameBoard = document.getElementById('game-board');
+            shuffle(cardsArray);
+            cardsArray.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.value = card;
+                cardElement.addEventListener('click', flipCard);
+                gameBoard.appendChild(cardElement);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flipped');
+            this.textContent = this.dataset.value;
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.value === secondCard.dataset.value;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            playFeedbackAudio('correct');
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            playFeedbackAudio('incorrect');
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                firstCard.textContent = '';
+                secondCard.textContent = '';
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [firstCard, secondCard, lockBoard] = [null, null, false];
+        }
+
+        function playFeedbackAudio(type) {
+            const audio = document.getElementById(`audio-${type}`);
+            audio.currentTime = 0;
+            audio.play().catch(error => console.error(`Erro ao reproduzir o áudio de feedback ${type}:`, error));
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
