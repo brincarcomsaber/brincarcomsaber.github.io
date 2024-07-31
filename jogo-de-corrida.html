@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Corrida</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            border: 2px solid #000;
+            background-color: #fff;
+            overflow: hidden;
+        }
+        .car {
+            position: absolute;
+            width: 50px;
+            height: 100px;
+            background-size: cover;
+            bottom: 10px;
+            left: 175px;
+            transition: left 0.1s, top 0.1s;
+        }
+        #player-car {
+            background-image: url('carro-jogador.png');
+        }
+        .obstacle {
+            position: absolute;
+            width: 50px;
+            height: 100px;
+            background-size: cover;
+            background-image: url('carro-obstaculo.png');
+            top: 0;
+        }
+        #score {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #back-link {
+            margin-top: 20px;
+            font-size: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        #back-link:hover {
+            color: #0056b3;
+        }
+    </style>
+    <!-- Código de anúncio do Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8594113118941416" crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>Jogo de Corrida</h1>
+    <div id="score">Pontuação: 0</div>
+    <div id="game-container">
+        <div class="car" id="player-car"></div>
+    </div>
+    <a id="back-link" href="index.html">Voltar à Home</a>
+
+    <!-- Áudios -->
+    <audio id="audio-colisao" src="colisao.mp3"></audio>
+    <audio id="audio-pontos" src="pontos.mp3"></audio>
+    <audio id="audio-nivel-up" src="nivel-up.mp3"></audio>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const playerCar = document.getElementById('player-car');
+        const scoreElement = document.getElementById('score');
+        const audioColisao = document.getElementById('audio-colisao');
+        const audioPontos = document.getElementById('audio-pontos');
+        const audioNivelUp = document.getElementById('audio-nivel-up');
+        let playerCarPosition = 175;  // Posição inicial do carro do jogador
+        const playerCarSpeed = 10;  // Velocidade de movimento do carro do jogador
+        let gameInterval;
+        let collisionInterval;
+        let scoreInterval;
+        let score = 0;
+        let obstacleSpeed = 2;
+
+        // Movimentação com teclas de seta
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft' && playerCarPosition > 0) {
+                playerCarPosition -= playerCarSpeed;
+                playerCar.style.left = `${playerCarPosition}px`;
+            } else if (event.key === 'ArrowRight' && playerCarPosition < 350) {
+                playerCarPosition += playerCarSpeed;
+                playerCar.style.left = `${playerCarPosition}px`;
+            }
+        });
+
+        // Movimentação com toque
+        gameContainer.addEventListener('touchstart', handleTouch);
+        gameContainer.addEventListener('touchmove', handleTouch);
+
+        function handleTouch(event) {
+            const touch = event.touches[0];
+            const touchX = touch.clientX - gameContainer.getBoundingClientRect().left;
+            if (touchX > 0 && touchX < gameContainer.clientWidth - playerCar.clientWidth) {
+                playerCar.style.left = `${touchX}px`;
+            }
+        }
+
+        function createObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            obstacle.style.left = `${Math.floor(Math.random() * 350)}px`;
+            gameContainer.appendChild(obstacle);
+            moveObstacle(obstacle);
+        }
+
+        function moveObstacle(obstacle) {
+            let obstaclePosition = 0;
+            const interval = setInterval(() => {
+                if (obstaclePosition > 600) {
+                    clearInterval(interval);
+                    obstacle.remove();
+                } else {
+                    obstaclePosition += obstacleSpeed;
+                    obstacle.style.top = `${obstaclePosition}px`;
+                }
+            }, 10);
+        }
+
+        function startGame() {
+            gameInterval = setInterval(createObstacle, 2000);
+            collisionInterval = setInterval(checkCollision, 100);
+            scoreInterval = setInterval(updateScore, 1000);
+        }
+
+        function stopGame() {
+            clearInterval(gameInterval);
+            clearInterval(collisionInterval);
+            clearInterval(scoreInterval);
+            const obstacles = document.querySelectorAll('.obstacle');
+            obstacles.forEach(obstacle => obstacle.remove());
+        }
+
+        function checkCollision() {
+            const obstacles = document.querySelectorAll('.obstacle');
+            obstacles.forEach(obstacle => {
+                const carRect = playerCar.getBoundingClientRect();
+                const obstacleRect = obstacle.getBoundingClientRect();
+                if (
+                    carRect.left < obstacleRect.left + obstacleRect.width &&
+                    carRect.left + carRect.width > obstacleRect.left &&
+                    carRect.top < obstacleRect.top + obstacleRect.height &&
+                    carRect.top + carRect.height > obstacleRect.top
+                ) {
+                    audioColisao.play();  // Toca o som de colisão
+                    alert('Fim de Jogo! Você colidiu com um obstáculo.');
+                    stopGame();
+                    window.location.reload();
+                }
+            });
+        }
+
+        function updateScore() {
+            score += 1;
+            scoreElement.textContent = `Pontuação: ${score}`;
+            audioPontos.play();  // Toca o som de aumento de pontuação
+            if (score % 10 === 0) {
+                obstacleSpeed += 1; // Aumenta a velocidade dos obstáculos a cada 10 pontos
+                audioNivelUp.play();  // Toca o som de aumento de nível
+            }
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
